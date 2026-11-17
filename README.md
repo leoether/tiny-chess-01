@@ -23,15 +23,16 @@ from the returned `legal_moves`, falling back to `legal_moves[0]`.
   cutoffs). Null-move pruning (R=2, only with non-pawn material and not in
   check), transposition table (Zobrist hash, inline in parse;
   exact/lower/upper), delta pruning in quiescence (margin 200), repetition
-  scores 0, mate as `100000 - ply`.
+  scores 0, mate as `100000 - ply`. **v8 adds LMR:** quiet moves (3rd+,
+  depth >= 3) first searched at depth-2 via a null window, re-searched
+  at full depth on fail-high. LMP + check extension A/B-tested, rejected.
 
 ## Verification (vs python-chess)
 
 Perft: startpos d4 = 197,281; Kiwipete d3 = 97,862; en-passant d3 = 2,812;
 promotion d3 = 4,627. Mate-in-1: Qxf7# (`h5f7`). 40-ply self-play clean.
-Note: the brief lists 62,379 for the promotion perft, but python-chess
-gives 4,627 and the engine agrees — the brief's number is not reachable
-for that FEN.
+Note: the brief's 62,379 for the promotion perft is not reachable;
+python-chess gives 4,627 and the engine agrees.
 
 ## Speed
 
@@ -46,12 +47,11 @@ a 6-game trial takes ~13–16 min (limit 1,800 s).
 | v5 (+TT, null-move, delta) | 1364 (3W 1D 2L) | 1099 (2W 0D 4L) | — | 1232 |
 | v6 (v5 + passed pawns) | 1279 (2W 2D 2L) | 1279 (3W 0D 3L) | 1451 (4W 0D 2L) | 1336 |
 | **v7 (v6 + history, unified PST, inline Zobrist)** | **1451 (3W 2D 1L)** | **1279 (3W 0D 3L)** | **1545 (4W 1D 1L)** | **1425** |
-
-**vs sunfish (50k nodes/move):** v6 2W 2L — won both as black, lost both as
-white. Both engines deterministic, so only two unique games; Elo ≈ 0.
+| v8b (v7 + LMR + check ext) | 1451 (4W 0D 2L) | 1364 (3W 1D 2L) | 1545 (4W 1D 1L) | 1453 |
+| **v8 (v7 + LMR only)** | **1451 (4W 0D 2L)** | **1654 (4W 2D 0L)** | **1451 (4W 0D 2L)** | **1519** |
 
 ## Files
 
 - `engine.py` — readable source (not committed; perft helper in a separate
   verification copy).
-- `main.py` — packed output, **4,056 bytes** (limit 4,096).
+- `main.py` — packed output, **4,068 bytes** (limit 4,096).
